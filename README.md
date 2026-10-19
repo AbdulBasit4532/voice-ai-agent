@@ -2,20 +2,32 @@
 
 A voice agent that answers a real U.S. phone number, registers a new patient through natural conversation, persists the record to a database, and exposes it through a REST API, a landing page, and a dashboard.
 
-| Deliverable | Where |
-|---|---|
-| Phone number | **+1 (307) 487-1026** (Vapi, U.S.) |
-| Landing page | **`GET /`** — Maya, how the call works, what is collected, API overview |
-| Browser call | **Talk to Maya** on `/` and `/dashboard/` (no phone needed) |
-| Dashboard | `GET /dashboard/` — live registry, transcripts, appointments |
-| Health | `GET /health` |
+## For reviewers (submission)
 
-> This is a take-home assessment. Do not enter real patient data. Seed records are fictional.
+These four items are what the challenge document asks you to send. The same values live in [SUBMISSION.md](SUBMISSION.md).
+
+| Item | Value |
+|---|---|
+| Repository | **https://github.com/AbdulBasit4532/voice-ai-agent** |
+| Phone number | **+1 (307) 487-1026** |
+| API base URL | **https://clerical-parted-enlisted.ngrok-free.dev** |
+| Credentials | **None.** The API is open (fictional data). Browser interstitial on free ngrok: click through, or send `ngrok-skip-browser-warning: 1`. |
+
+| Surface | URL |
+|---|---|
+| Landing page | https://clerical-parted-enlisted.ngrok-free.dev/ |
+| Dashboard | https://clerical-parted-enlisted.ngrok-free.dev/dashboard/ |
+| Health | https://clerical-parted-enlisted.ngrok-free.dev/health |
+| Patients | https://clerical-parted-enlisted.ngrok-free.dev/patients |
+| Browser call | **Talk to Maya** on `/` or `/dashboard/` (same agent as the phone line) |
+
+> Fictional clinic, fictional data. Do not enter real patient information.
 
 ---
 
 ## Contents
 
+- [For reviewers (submission)](#for-reviewers-submission)
 - [Architecture](#architecture)
 - [Tech stack and why](#tech-stack-and-why)
 - [Quick start (local)](#quick-start-local)
