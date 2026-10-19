@@ -90,6 +90,7 @@ export async function buildApp(ctx: AppContext): Promise<FastifyInstance> {
   }
 
   app.get("/", async (_req, reply) => reply.redirect("/dashboard/"));
+  app.get("/favicon.ico", async (_req, reply) => reply.code(204).send());
   app.get("/health", async () => ({
     data: { status: "ok", uptime_s: Math.round(process.uptime()), time: new Date().toISOString() },
     error: null,

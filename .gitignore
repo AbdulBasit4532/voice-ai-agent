@@ -13,3 +13,4 @@ logs/
 .DS_Store
 uploads/
 terminals/
+.playwright-mcp/
