@@ -51,7 +51,6 @@ export function createContext(config: AppConfig, log?: Logger): AppContext {
 export async function buildApp(ctx: AppContext): Promise<FastifyInstance> {
   const app: FastifyInstance = Fastify({
     loggerInstance: ctx.log as unknown as FastifyBaseLogger,
-    disableRequestLogging: ctx.config.NODE_ENV === "test",
     bodyLimit: 256 * 1024,
   });
 

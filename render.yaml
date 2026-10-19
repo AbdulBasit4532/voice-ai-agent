@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: voice-patient-registration
+    runtime: docker
+    plan: starter
+    healthCheckPath: /health
+    disk:
+      name: patient-data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "4710"
+      - key: DATABASE_PATH
+        value: /data/patients.db
+      - key: SEED_ON_BOOT
+        value: "true"
+      - key: PUBLIC_BASE_URL
+        sync: false
+      - key: VAPI_API_KEY
+        sync: false
+      - key: VAPI_SERVER_SECRET
+        generateValue: true

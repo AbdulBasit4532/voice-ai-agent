@@ -1,0 +1,17 @@
+services:
+  api:
+    build: .
+    ports:
+      - "4710:4710"
+    env_file:
+      - .env
+    environment:
+      DATABASE_PATH: /data/patients.db
+      HOST: 0.0.0.0
+      PORT: 4710
+    volumes:
+      - patient-data:/data
+    restart: unless-stopped
+
+volumes:
+  patient-data:

@@ -28,7 +28,7 @@ async function main(): Promise<void> {
   const openai = new OpenAI({ apiKey: config.OPENAI_API_KEY });
   const tools = [...toOpenAiTools(), {
     type: "function" as const,
-    function: { name: "end_call", description: "Hang up the call.", parameters: { type: "object", properties: {} } },
+    function: { name: "endCall", description: "Hang up the call.", parameters: { type: "object", properties: {} } },
   }];
 
   const callId = `sim-${randomUUID()}`;
@@ -82,7 +82,7 @@ async function main(): Promise<void> {
       }
       for (const tc of msg.tool_calls) {
         if (tc.type !== "function") continue;
-        if (tc.function.name === "end_call") {
+        if (tc.function.name === "endCall") {
           ended = true;
           messages.push({ role: "tool", tool_call_id: tc.id, content: JSON.stringify({ ok: true }) });
           continue;
