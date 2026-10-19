@@ -115,6 +115,14 @@ describe("Vapi webhook", () => {
   const url = "/voice/vapi/webhook";
   const headers = { "x-vapi-secret": "test-secret" };
 
+  it("web-config exposes only the public key, and reports disabled when not configured", async () => {
+    const res = await app.inject({ method: "GET", url: "/voice/vapi/web-config" });
+    expect(res.statusCode).toBe(200);
+    const { data } = json(res);
+    expect(data.enabled).toBe(false);
+    expect(JSON.stringify(data)).not.toContain("test-secret");
+  });
+
   it("rejects requests without the shared secret", async () => {
     const res = await app.inject({ method: "POST", url, payload: { message: { type: "tool-calls" } } });
     expect(res.statusCode).toBe(401);

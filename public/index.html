@@ -18,8 +18,20 @@
     <div class="topbar-actions">
       <span id="health" class="pill pill-muted">checking…</span>
       <a class="btn btn-ghost" href="/patients" target="_blank" rel="noopener">Open API</a>
+      <button id="call-toggle" class="btn" hidden>Talk to the agent</button>
     </div>
   </header>
+
+  <section id="call-panel" class="call-panel" hidden aria-live="polite">
+    <div class="call-head">
+      <div>
+        <strong id="call-status">Connecting…</strong>
+        <span id="call-hint" class="muted">Allow microphone access when prompted. Speak naturally, as if on the phone.</span>
+      </div>
+      <button id="call-hangup" class="btn btn-danger">Hang up</button>
+    </div>
+    <div id="call-transcript" class="call-transcript"></div>
+  </section>
 
   <main class="layout">
     <section class="panel">
@@ -83,5 +95,6 @@
   </template>
 
   <script src="./app.js" defer></script>
+  <script type="module" src="./webcall.js"></script>
 </body>
 </html>

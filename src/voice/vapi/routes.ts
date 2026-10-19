@@ -25,6 +25,20 @@ export async function vapiRoutes(app: FastifyInstance, ctx: AppContext): Promise
     return a.length === b.length && timingSafeEqual(a, b);
   };
 
+  /**
+   * Browser "web call" configuration for the dashboard. Only the PUBLIC key is exposed
+   * (it is designed for client-side use); the private key never leaves the server.
+   */
+  app.get("/voice/vapi/web-config", async () => {
+    const enabled = Boolean(config.VAPI_PUBLIC_KEY && config.VAPI_ASSISTANT_ID);
+    return {
+      data: enabled
+        ? { enabled, publicKey: config.VAPI_PUBLIC_KEY, assistantId: config.VAPI_ASSISTANT_ID }
+        : { enabled, reason: "Set VAPI_PUBLIC_KEY and VAPI_ASSISTANT_ID to enable browser calls." },
+      error: null,
+    };
+  });
+
   app.post("/voice/vapi/webhook", async (req: FastifyRequest, reply: FastifyReply) => {
     if (!authorized(req)) {
       log.warn({ ip: req.ip }, "vapi webhook rejected: bad secret");

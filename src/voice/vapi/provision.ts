@@ -54,35 +54,69 @@ async function main(): Promise<void> {
     console.log(`Created assistant ${assistantId}`);
   }
 
-  // 2. Phone number: reuse configured/attached number, otherwise request a free Vapi number.
+  // 2. Phone number. Priority: pinned id -> number already attached -> Twilio import -> free Vapi number.
+  //    You do not need to own a U.S. number: Vapi issues free U.S. numbers, and Twilio sells U.S. numbers
+  //    to accounts in any country. The number is attached to the assistant either way.
   let number: PhoneNumber | undefined;
-  if (config.VAPI_PHONE_NUMBER_ID) {
-    number = await vapi<PhoneNumber>("PATCH", `/phone-number/${config.VAPI_PHONE_NUMBER_ID}`, { assistantId });
-  } else {
-    const numbers = await vapi<PhoneNumber[]>("GET", "/phone-number");
-    number = numbers.find((n) => n.assistantId === assistantId) ?? numbers.find((n) => n.name === ASSISTANT_NAME);
-    if (number) {
-      number = await vapi<PhoneNumber>("PATCH", `/phone-number/${number.id}`, { assistantId });
+  let numberError: string | undefined;
+  try {
+    if (config.VAPI_PHONE_NUMBER_ID) {
+      number = await vapi<PhoneNumber>("PATCH", `/phone-number/${config.VAPI_PHONE_NUMBER_ID}`, { assistantId });
     } else {
-      number = await vapi<PhoneNumber>("POST", "/phone-number", {
-        provider: "vapi",
-        name: ASSISTANT_NAME,
-        assistantId,
-        ...(config.VAPI_AREA_CODE ? { numberDesiredAreaCode: config.VAPI_AREA_CODE } : {}),
-      });
+      const numbers = await vapi<PhoneNumber[]>("GET", "/phone-number");
+      number =
+        numbers.find((n) => n.assistantId === assistantId) ??
+        numbers.find((n) => n.name === ASSISTANT_NAME) ??
+        (config.TWILIO_PHONE_NUMBER ? numbers.find((n) => n.number === config.TWILIO_PHONE_NUMBER) : undefined);
+      if (number) {
+        number = await vapi<PhoneNumber>("PATCH", `/phone-number/${number.id}`, { assistantId });
+      } else if (config.TWILIO_ACCOUNT_SID && config.TWILIO_AUTH_TOKEN && config.TWILIO_PHONE_NUMBER) {
+        number = await vapi<PhoneNumber>("POST", "/phone-number", {
+          provider: "twilio",
+          name: ASSISTANT_NAME,
+          assistantId,
+          number: config.TWILIO_PHONE_NUMBER,
+          twilioAccountSid: config.TWILIO_ACCOUNT_SID,
+          twilioAuthToken: config.TWILIO_AUTH_TOKEN,
+        });
+        console.log(`Imported Twilio number ${config.TWILIO_PHONE_NUMBER} into Vapi`);
+      } else {
+        number = await vapi<PhoneNumber>("POST", "/phone-number", {
+          provider: "vapi",
+          name: ASSISTANT_NAME,
+          assistantId,
+          ...(config.VAPI_AREA_CODE ? { numberDesiredAreaCode: config.VAPI_AREA_CODE } : {}),
+        });
+        console.log("Requested a free Vapi U.S. number");
+      }
     }
+  } catch (err) {
+    numberError = err instanceof Error ? err.message : String(err);
   }
 
   console.log("");
-  console.log("Provisioning complete.");
+  console.log(number ? "Provisioning complete." : "Assistant provisioned; phone number NOT attached.");
   console.log(`  Assistant ID : ${assistantId}`);
-  console.log(`  Number ID    : ${number.id}`);
-  console.log(`  Phone number : ${number.number ?? "(pending — check the Vapi dashboard)"}`);
+  if (number) {
+    console.log(`  Number ID    : ${number.id}`);
+    console.log(`  Phone number : ${number.number ?? "(pending — check the Vapi dashboard)"}`);
+  } else {
+    console.log(`  Number error : ${numberError}`);
+    console.log("");
+    console.log("  Options:");
+    console.log("   a) Add a payment method in the Vapi dashboard (free numbers require a verified org), then re-run.");
+    console.log("   b) Buy a U.S. number on Twilio (available from any country), set TWILIO_ACCOUNT_SID,");
+    console.log("      TWILIO_AUTH_TOKEN and TWILIO_PHONE_NUMBER (+1XXXXXXXXXX) in .env, then re-run.");
+    console.log("   c) Test without a phone: set VAPI_PUBLIC_KEY in .env and use 'Talk to the agent' on /dashboard,");
+    console.log("      or run 'npm run simulate'.");
+  }
   console.log(`  Webhook URL  : ${publicBaseUrl.replace(/\/$/, "")}/voice/vapi/webhook`);
   console.log("");
   console.log("Add these to your .env so future runs update instead of create:");
   console.log(`  VAPI_ASSISTANT_ID=${assistantId}`);
-  console.log(`  VAPI_PHONE_NUMBER_ID=${number.id}`);
+  if (number) console.log(`  VAPI_PHONE_NUMBER_ID=${number.id}`);
+  if (!config.VAPI_PUBLIC_KEY) console.log("  VAPI_PUBLIC_KEY=<public key from Vapi dashboard>  # enables browser calls");
+  if (numberError) process.exitCode = 2;
 }
 
 main().catch((err) => {

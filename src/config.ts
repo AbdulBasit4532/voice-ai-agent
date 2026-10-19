@@ -23,6 +23,13 @@ const envSchema = z.object({
   VAPI_ASSISTANT_ID: z.string().optional(),
   VAPI_PHONE_NUMBER_ID: z.string().optional(),
   VAPI_AREA_CODE: z.string().optional(),
+  // Public (browser-safe) key: enables "Talk to the agent" web calls from the dashboard.
+  VAPI_PUBLIC_KEY: z.string().optional(),
+
+  // Optional: import a Twilio number into Vapi instead of using a free Vapi number.
+  TWILIO_ACCOUNT_SID: z.string().optional(),
+  TWILIO_AUTH_TOKEN: z.string().optional(),
+  TWILIO_PHONE_NUMBER: z.string().optional(),
 
   OPENAI_API_KEY: z.string().optional(),
   OPENAI_MODEL: z.string().default("gpt-4o"),

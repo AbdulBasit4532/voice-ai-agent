@@ -98,6 +98,26 @@ td .sub { display: block; color: var(--muted); font-size: 0.8rem; margin-top: 0.
 .card details summary { cursor: pointer; color: var(--accent); font-size: 0.85rem; margin-top: 0.4rem; }
 .card pre { white-space: pre-wrap; font-size: 0.8rem; margin: 0.5rem 0 0; max-height: 260px; overflow: auto; background: #fff; padding: 0.6rem; border-radius: 8px; border: 1px solid var(--line); }
 
+.btn-danger { background: var(--danger); border-color: var(--danger); color: #fff; }
+
+.call-panel {
+  max-width: 1400px; margin: 1.25rem auto 0; padding: 1rem 1.25rem;
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow);
+  margin-left: 1.5rem; margin-right: 1.5rem;
+}
+@media (min-width: 1448px) { .call-panel { margin-left: auto; margin-right: auto; } }
+.call-head { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.call-head strong { display: block; }
+.call-head .muted { font-size: 0.85rem; }
+.call-transcript {
+  margin-top: 0.75rem; max-height: 240px; overflow: auto; display: flex; flex-direction: column; gap: 0.4rem;
+  font-size: 0.92rem; min-height: 2rem;
+}
+.line { display: flex; gap: 0.6rem; }
+.line .who { flex: none; width: 3.2rem; font-weight: 600; color: var(--muted); font-size: 0.8rem; padding-top: 0.15rem; }
+.line-assistant .who { color: var(--accent); }
+.line[data-partial="true"] .text { opacity: 0.6; }
+
 @media (max-width: 900px) {
   .layout.has-detail { grid-template-columns: 1fr; }
   .detail { position: static; max-height: none; }

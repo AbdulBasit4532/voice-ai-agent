@@ -166,6 +166,7 @@
   els.showDeleted.addEventListener("change", load);
   els.refresh.addEventListener("click", load);
   els.detailClose.addEventListener("click", closeDetail);
+  document.addEventListener("patients:refresh", load);
 
   checkHealth();
   load();

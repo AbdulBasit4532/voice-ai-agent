@@ -148,6 +148,19 @@ To inspect the exact assistant configuration without calling Vapi: `npm run vapi
 
 > Vapi's built-in OpenAI/Deepgram/ElevenLabs keys are used by default (billed to the Vapi account). You can attach your own provider keys in the Vapi dashboard; no code change needed.
 
+### I don't have a U.S. phone number / I'm not in the U.S.
+
+You do not need to own a number. The number is issued by the provider and attached to the assistant:
+
+| Situation | What to do |
+|---|---|
+| You just need the U.S. number for reviewers to call | `npm run vapi:provision` requests a **free Vapi U.S. number**. Vapi requires a verified organisation (add a card in the Vapi dashboard; the trial credit covers the demo). |
+| Vapi refuses to issue a free number | Buy a U.S. number on **Twilio** (Twilio sells U.S. numbers to accounts in any country, roughly $1/month). Put `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER=+1XXXXXXXXXX` in `.env` and re-run `npm run vapi:provision`; the script imports the number into Vapi and attaches the assistant. The script prints these options if the free-number request fails. |
+| You cannot dial a U.S. number from your own phone to test | Use the **browser call**: set `VAPI_PUBLIC_KEY` (Vapi dashboard → API Keys → *Public* key) and `VAPI_ASSISTANT_ID` in `.env`, restart, open `/dashboard/` and click **Talk to the agent**. It is the same assistant, same prompt, same webhooks; the live transcript is shown and the record appears in the table when the call ends. Only the public key is exposed to the browser. |
+| No Vapi account at all | `npm run simulate` runs the identical prompt and tools in the terminal using your `OPENAI_API_KEY`. |
+
+Reviewers in the U.S. can call the provisioned number normally; international callers may be blocked by Vapi's free numbers (they are domestic-only), which is another reason to keep the browser call enabled on the deployed dashboard.
+
 ---
 
 ## Environment variables
@@ -166,6 +179,8 @@ To inspect the exact assistant configuration without calling Vapi: `npm run vapi
 | `VAPI_ASSISTANT_ID` | no | — | Pin an existing assistant |
 | `VAPI_PHONE_NUMBER_ID` | no | — | Pin an existing number |
 | `VAPI_AREA_CODE` | no | — | Preferred area code for a new free number |
+| `VAPI_PUBLIC_KEY` | for browser calls | — | Vapi *public* key; enables "Talk to the agent" on the dashboard |
+| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER` | optional | — | Import a Twilio U.S. number into Vapi instead of a free Vapi number |
 | `OPENAI_API_KEY` | simulator only | — | Used by `npm run simulate` |
 | `OPENAI_MODEL` | no | `gpt-4o` | Model for the assistant and simulator |
 
@@ -188,6 +203,7 @@ All responses use the envelope `{ "data": ..., "error": null }` or `{ "data": nu
 | `GET` | `/patients/:id/appointments` | Mock appointments | 200 |
 | `GET` | `/calls` | Recent calls | 200 |
 | `GET` | `/health` | Liveness | 200 |
+| `GET` | `/voice/vapi/web-config` | Public key + assistant id for browser calls (or `enabled:false`) | 200 |
 | `POST` | `/voice/vapi/webhook` | Vapi server URL (requires `x-vapi-secret`) | 200 |
 
 Status codes: `400` malformed JSON / non-UUID id · `404` unknown or deleted patient · `413` body > 256 KB · `422` validation failure with per-field messages · `500` unexpected error (no stack traces leak).
