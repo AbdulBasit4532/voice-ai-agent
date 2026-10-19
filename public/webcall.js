@@ -17,7 +17,7 @@ let config = null;
 
 async function loadConfig() {
   try {
-    const res = await fetch("/voice/vapi/web-config");
+    const res = await fetch("/voice/vapi/web-config", { headers: { "ngrok-skip-browser-warning": "1" } });
     const json = await res.json();
     config = json.data;
     if (config?.enabled) toggle.hidden = false;

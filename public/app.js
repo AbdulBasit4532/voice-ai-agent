@@ -26,7 +26,8 @@
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
   async function api(path) {
-    const res = await fetch(path, { headers: { accept: "application/json" } });
+    // ngrok's free tier replaces responses with a browser warning page unless this header is sent.
+    const res = await fetch(path, { headers: { accept: "application/json", "ngrok-skip-browser-warning": "1" } });
     const json = await res.json().catch(() => ({ data: null, error: { message: `HTTP ${res.status}` } }));
     if (!res.ok || json.error) throw new Error(json.error?.message || `HTTP ${res.status}`);
     return json;
