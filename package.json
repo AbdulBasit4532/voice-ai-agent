@@ -1,0 +1,41 @@
+{
+  "name": "voice-patient-registration",
+  "version": "1.0.0",
+  "description": "Voice AI agent (Vapi + OpenAI) that registers patients over the phone, backed by a Fastify REST API and SQLite.",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "node dist/server.js",
+    "build": "tsc -p tsconfig.json && npm run copy:assets",
+    "copy:assets": "node -e \"require('fs').cpSync('src/db/schema.sql','dist/db/schema.sql')\"",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "seed": "tsx src/db/seed.ts",
+    "simulate": "tsx src/simulator/cli.ts",
+    "vapi:provision": "tsx src/voice/vapi/provision.ts",
+    "vapi:print-config": "tsx src/voice/vapi/provision.ts --print"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.3.1",
+    "@fastify/static": "^10.1.6",
+    "better-sqlite3": "^11.7.0",
+    "dotenv": "^16.4.7",
+    "fastify": "^5.12.7",
+    "openai": "^4.104.0",
+    "pino": "^9.6.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.10.5",
+    "pino-pretty": "^13.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
+    "vitest": "^5.0.5"
+  }
+}

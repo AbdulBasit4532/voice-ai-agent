@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Patient Registry · Lakeside Family Health</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <div>
+        <h1>Patient Registry</h1>
+        <p class="subtitle">Records collected by the voice intake agent and the REST API</p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <span id="health" class="pill pill-muted">checking…</span>
+      <a class="btn btn-ghost" href="/patients" target="_blank" rel="noopener">Open API</a>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="panel">
+      <div class="toolbar">
+        <label class="search">
+          <span class="visually-hidden">Search</span>
+          <input id="search" type="search" placeholder="Search by name, phone, city or state" autocomplete="off" />
+        </label>
+        <label class="toggle">
+          <input id="show-deleted" type="checkbox" /> Show deleted
+        </label>
+        <button id="refresh" class="btn">Refresh</button>
+      </div>
+
+      <div id="status" class="status" role="status"></div>
+
+      <div class="table-wrap">
+        <table id="patients-table">
+          <thead>
+            <tr>
+              <th>Patient</th>
+              <th>Date of birth</th>
+              <th>Phone</th>
+              <th>Location</th>
+              <th>Insurance</th>
+              <th>Registered</th>
+            </tr>
+          </thead>
+          <tbody id="patients-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <aside id="detail" class="panel detail" hidden>
+      <div class="detail-head">
+        <div>
+          <h2 id="detail-name"></h2>
+          <p id="detail-id" class="mono muted"></p>
+        </div>
+        <button id="detail-close" class="btn btn-ghost" aria-label="Close details">Close</button>
+      </div>
+      <dl id="detail-fields" class="fields"></dl>
+
+      <h3>Appointments</h3>
+      <div id="detail-appointments" class="stack"></div>
+
+      <h3>Call history</h3>
+      <div id="detail-calls" class="stack"></div>
+    </aside>
+  </main>
+
+  <template id="row-template">
+    <tr tabindex="0">
+      <td data-col="name"></td>
+      <td data-col="dob"></td>
+      <td data-col="phone" class="mono"></td>
+      <td data-col="location"></td>
+      <td data-col="insurance"></td>
+      <td data-col="created"></td>
+    </tr>
+  </template>
+
+  <script src="./app.js" defer></script>
+</body>
+</html>
