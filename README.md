@@ -1,13 +1,13 @@
 # Voice AI Patient Registration
 
-A voice agent that answers a real U.S. phone number, registers a new patient through natural conversation, persists the record to a database, and exposes it through a REST API and a small dashboard.
+A voice agent that answers a real U.S. phone number, registers a new patient through natural conversation, persists the record to a database, and exposes it through a REST API, a landing page, and a dashboard.
 
 | Deliverable | Where |
 |---|---|
 | Phone number | **+1 (307) 487-1026** (Vapi, U.S.) |
-| API base URL | **`https://<your-deployment>`** — set after deploying (see [Go live](#go-live-phone-number)); a temporary tunnel URL is used during development |
-| Browser call | **Talk to the agent** button on `/dashboard/` (no phone needed) |
-| Dashboard | `GET /dashboard/` on the API base URL |
+| Landing page | **`GET /`** — Maya, how the call works, what is collected, API overview |
+| Browser call | **Talk to Maya** on `/` and `/dashboard/` (no phone needed) |
+| Dashboard | `GET /dashboard/` — live registry, transcripts, appointments |
 | Health | `GET /health` |
 
 > This is a take-home assessment. Do not enter real patient data. Seed records are fictional.
@@ -46,7 +46,7 @@ A voice agent that answers a real U.S. phone number, registers a new patient thr
              │  /voice/vapi/webhook ─▶ ToolExecutor ─┐             │
              │                                       ▼             │
              │  /patients (REST) ────────────▶ PatientService      │
-             │  /dashboard (static UI) ──┘           │             │
+             │  /  landing · /dashboard/ UI ─┘       │             │
              │                                       ▼             │
              │                          PatientRepository ─▶ SQLite│
              │                          CallLogRepository ─▶ (file)│
@@ -111,7 +111,8 @@ curl -s -X POST localhost:4710/patients -H 'content-type: application/json' -d '
   "first_name":"Sarah","last_name":"Davis","date_of_birth":"07/04/1990","sex":"Female",
   "phone_number":"(312) 555-0188","address_line_1":"15 Main St","city":"Chicago","state":"Illinois","zip_code":"60601"
 }' | jq
-open http://localhost:4710/dashboard/
+open http://localhost:4710/            # landing page
+open http://localhost:4710/dashboard/  # patient registry
 ```
 
 ### Talk to the agent without a phone
@@ -157,7 +158,7 @@ You do not need to own a number. The number is issued by the provider and attach
 |---|---|
 | You just need the U.S. number for reviewers to call | `npm run vapi:provision` requests a **free Vapi U.S. number**. Vapi requires a verified organisation (add a card in the Vapi dashboard; the trial credit covers the demo). |
 | Vapi refuses to issue a free number | Buy a U.S. number on **Twilio** (Twilio sells U.S. numbers to accounts in any country, roughly $1/month). Put `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER=+1XXXXXXXXXX` in `.env` and re-run `npm run vapi:provision`; the script imports the number into Vapi and attaches the assistant. The script prints these options if the free-number request fails. |
-| You cannot dial a U.S. number from your own phone to test | Use the **browser call**: set `VAPI_PUBLIC_KEY` (Vapi dashboard → API Keys → *Public* key) and `VAPI_ASSISTANT_ID` in `.env`, restart, open `/dashboard/` and click **Talk to the agent**. It is the same assistant, same prompt, same webhooks; the live transcript is shown and the record appears in the table when the call ends. Only the public key is exposed to the browser. |
+| You cannot dial a U.S. number from your own phone to test | Use the **browser call**: set `VAPI_PUBLIC_KEY` (Vapi dashboard → API Keys → *Public* key) and `VAPI_ASSISTANT_ID` in `.env`, restart, open `/` or `/dashboard/` and click **Talk to Maya**. It is the same assistant, same prompt, same webhooks; the live transcript is shown and the record appears in the dashboard when the call ends. Only the public key is exposed to the browser. |
 | No Vapi account at all | `npm run simulate` runs the identical prompt and tools in the terminal using your `OPENAI_API_KEY`. |
 
 Reviewers in the U.S. can call the provisioned number normally; international callers may be blocked by Vapi's free numbers (they are domestic-only), which is another reason to keep the browser call enabled on the deployed dashboard.
@@ -358,7 +359,12 @@ src/
   voice/vapi/routes.ts      webhook (auth, tool-calls, status, end-of-call-report)
   voice/vapi/provision.ts   create/update assistant + free number
   simulator/cli.ts          terminal conversation with the same prompt/tools
-public/                     dashboard (vanilla HTML/CSS/JS, no build step)
+public/                     landing page, dashboard, Maya illustration (no build step)
+  index.html                animated landing page
+  landing.css / landing.js
+  dashboard/                patient registry UI
+  shared/                   design tokens + browser-call widget
+  assets/maya.png           cartoon of Maya
 tests/                      vitest suites
 scripts/sample-call.txt     scripted caller for the simulator
 ```

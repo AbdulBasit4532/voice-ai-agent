@@ -85,12 +85,20 @@ export async function buildApp(ctx: AppContext): Promise<FastifyInstance> {
   });
 
   await app.register(cors, { origin: true });
+  // Static frontend: `/` is the landing page, `/dashboard/` the registry UI.
+  // Explicit API routes always win over the static `/*` wildcard in Fastify's router.
   if (fs.existsSync(publicDir)) {
-    await app.register(fastifyStatic, { root: publicDir, prefix: "/dashboard/", decorateReply: false });
+    await app.register(fastifyStatic, {
+      root: publicDir,
+      prefix: "/",
+      index: ["index.html"],
+      redirect: true,
+      decorateReply: false,
+      maxAge: ctx.config.NODE_ENV === "production" ? "1h" : 0,
+    });
   }
 
-  app.get("/", async (_req, reply) => reply.redirect("/dashboard/"));
-  app.get("/favicon.ico", async (_req, reply) => reply.code(204).send());
+  app.get("/favicon.ico", async (_req, reply) => reply.redirect("/assets/favicon.svg"));
   app.get("/health", async () => ({
     data: { status: "ok", uptime_s: Math.round(process.uptime()), time: new Date().toISOString() },
     error: null,

@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Patient Registry · Lakeside Family Health</title>
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/shared/theme.css" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/">
+      <img src="/assets/favicon.svg" alt="" width="34" height="34" />
+      <span>Lakeside Family Health</span>
+    </a>
+    <nav class="crumbs" aria-label="Breadcrumb">
+      <a href="/">Home</a><span>/</span><strong>Patient registry</strong>
+    </nav>
+    <div class="topbar-actions">
+      <span id="health" class="pill pill-muted"><span class="dot"></span>checking…</span>
+      <a class="btn btn-ghost btn-sm" href="/patients" target="_blank" rel="noopener">Open API</a>
+      <button class="btn btn-sm" data-call-start>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+        Talk to Maya
+      </button>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="page-head reveal in">
+      <div>
+        <h1>Patient registry</h1>
+        <p class="muted">Every record Maya collects over the phone, plus anything created through the REST API. Click a row for details, transcripts and appointments.</p>
+      </div>
+      <div class="maya-peek" aria-hidden="true">
+        <img src="/assets/maya.png" alt="" width="96" height="96" />
+        <span class="peek-bubble">Need a hand? <b>Talk to me</b> from any page.</span>
+      </div>
+    </section>
+
+    <section class="stats" aria-label="Summary">
+      <div class="stat reveal in" data-delay="1">
+        <span class="stat-icon">👥</span>
+        <div><strong id="stat-total">—</strong><span>Patients on file</span></div>
+      </div>
+      <div class="stat reveal in" data-delay="2">
+        <span class="stat-icon">🗓️</span>
+        <div><strong id="stat-today">—</strong><span>Registered today</span></div>
+      </div>
+      <div class="stat reveal in" data-delay="3">
+        <span class="stat-icon">📞</span>
+        <div><strong id="stat-calls">—</strong><span>Calls handled</span></div>
+      </div>
+      <div class="stat reveal in" data-delay="4">
+        <span class="stat-icon">🛡️</span>
+        <div><strong id="stat-insured">—</strong><span>With insurance on record</span></div>
+      </div>
+    </section>
+
+    <div class="layout">
+      <section class="panel reveal in" data-delay="2">
+        <div class="toolbar">
+          <label class="search">
+            <span class="visually-hidden">Search</span>
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input id="search" type="search" placeholder="Search by name, phone, city or state" autocomplete="off" />
+          </label>
+          <label class="toggle">
+            <input id="show-deleted" type="checkbox" /> <span>Show deleted</span>
+          </label>
+          <button id="refresh" class="btn btn-ghost btn-sm">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            Refresh
+          </button>
+        </div>
+
+        <div id="status" class="status" role="status"></div>
+
+        <div class="table-wrap">
+          <table id="patients-table">
+            <thead>
+              <tr>
+                <th>Patient</th>
+                <th>Date of birth</th>
+                <th>Phone</th>
+                <th>Location</th>
+                <th>Insurance</th>
+                <th>Registered</th>
+              </tr>
+            </thead>
+            <tbody id="patients-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <aside id="detail" class="panel detail" hidden>
+        <div class="detail-head">
+          <div class="detail-id-block">
+            <span class="avatar-initials" id="detail-initials" aria-hidden="true"></span>
+            <div>
+              <h2 id="detail-name"></h2>
+              <p id="detail-id" class="mono muted"></p>
+            </div>
+          </div>
+          <button id="detail-close" class="btn btn-ghost btn-sm" aria-label="Close details">Close</button>
+        </div>
+        <dl id="detail-fields" class="fields"></dl>
+
+        <h3>Appointments</h3>
+        <div id="detail-appointments" class="stack"></div>
+
+        <h3>Call history</h3>
+        <div id="detail-calls" class="stack"></div>
+      </aside>
+    </div>
+  </main>
+
+  <template id="row-template">
+    <tr tabindex="0">
+      <td data-col="name"></td>
+      <td data-col="dob"></td>
+      <td data-col="phone" class="mono"></td>
+      <td data-col="location"></td>
+      <td data-col="insurance"></td>
+      <td data-col="created"></td>
+    </tr>
+  </template>
+
+  <div id="call-root"></div>
+  <script src="./app.js" defer></script>
+  <script type="module" src="/shared/webcall.js"></script>
+</body>
+</html>

@@ -15,7 +15,12 @@
     detailCalls: $("#detail-calls"),
     detailAppointments: $("#detail-appointments"),
     detailClose: $("#detail-close"),
+    detailInitials: $("#detail-initials"),
     rowTemplate: $("#row-template"),
+    statTotal: $("#stat-total"),
+    statToday: $("#stat-today"),
+    statCalls: $("#stat-calls"),
+    statInsured: $("#stat-insured"),
   };
 
   let patients = [];
@@ -41,22 +46,46 @@
   async function checkHealth() {
     try {
       await api("/health");
-      els.health.textContent = "API online";
+      els.health.innerHTML = '<span class="dot"></span>API online';
       els.health.className = "pill pill-ok";
     } catch {
-      els.health.textContent = "API unreachable";
+      els.health.innerHTML = '<span class="dot"></span>API unreachable';
       els.health.className = "pill pill-danger";
     }
+  }
+
+  function countUp(el, target) {
+    const start = Number(el.dataset.value || 0);
+    el.dataset.value = String(target);
+    if (start === target || window.matchMedia("(prefers-reduced-motion: reduce)").matches) { el.textContent = String(target); return; }
+    const t0 = performance.now();
+    (function frame(now) {
+      const p = Math.min(1, (now - t0) / 700);
+      const eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = String(Math.round(start + (target - start) * eased));
+      if (p < 1) requestAnimationFrame(frame);
+    })(t0);
+  }
+
+  function updateStats(total) {
+    const live = patients.filter((p) => !p.deleted_at);
+    const today = new Date().toDateString();
+    countUp(els.statTotal, total ?? live.length);
+    countUp(els.statToday, live.filter((p) => new Date(p.created_at).toDateString() === today).length);
+    countUp(els.statInsured, live.filter((p) => p.insurance_provider).length);
+    api("/calls").then(({ data }) => countUp(els.statCalls, data.length)).catch(() => { els.statCalls.textContent = "—"; });
   }
 
   async function load() {
     setStatus("Loading patients…");
     els.refresh.disabled = true;
+    els.refresh.classList.add("spinning");
     try {
       const qs = els.showDeleted.checked ? "?include_deleted=true&limit=500" : "?limit=500";
       const { data, meta } = await api(`/patients${qs}`);
       patients = data;
       render();
+      updateStats(els.showDeleted.checked ? undefined : meta?.total);
       setStatus(`${meta?.total ?? data.length} patient${data.length === 1 ? "" : "s"} on file`);
     } catch (err) {
       patients = [];
@@ -64,6 +93,7 @@
       setStatus(`Could not load patients: ${err.message}`, true);
     } finally {
       els.refresh.disabled = false;
+      els.refresh.classList.remove("spinning");
     }
   }
 
@@ -82,16 +112,17 @@
     els.body.innerHTML = "";
     if (rows.length === 0) {
       const tr = document.createElement("tr");
-      tr.innerHTML = `<td colspan="6"><div class="empty"><strong>${patients.length ? "No matches" : "No patients yet"}</strong>${
+      tr.innerHTML = `<td colspan="6"><div class="empty"><img src="/assets/maya.png" alt="" width="120" height="120" /><strong>${patients.length ? "No matches" : "No patients yet"}</strong>${
         patients.length ? "Try a different search." : "Call the intake line or POST to /patients to add the first record."
       }</div></td>`;
       els.body.appendChild(tr);
       return;
     }
-    for (const p of rows) {
+    rows.forEach((p, i) => {
       const frag = els.rowTemplate.content.cloneNode(true);
       const tr = frag.querySelector("tr");
       tr.dataset.id = p.patient_id;
+      tr.style.animationDelay = `${Math.min(i, 12) * 35}ms`;
       if (p.deleted_at) tr.classList.add("deleted");
       if (p.patient_id === selectedId) tr.classList.add("selected");
       tr.querySelector('[data-col="name"]').innerHTML = `<span class="name">${esc(p.first_name)} ${esc(p.last_name)}</span><span class="sub">${esc(p.sex)} · ${esc(p.preferred_language)}</span>`;
@@ -103,7 +134,7 @@
       tr.addEventListener("click", () => select(p.patient_id));
       tr.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(p.patient_id); } });
       els.body.appendChild(frag);
-    }
+    });
   }
 
   const FIELDS = [
@@ -125,7 +156,11 @@
     els.layout.classList.add("has-detail");
     els.detail.hidden = false;
     els.detailName.textContent = `${p.first_name} ${p.last_name}`;
+    els.detailInitials.textContent = `${p.first_name[0] || ""}${p.last_name[0] || ""}`.toUpperCase();
     els.detailId.textContent = p.patient_id;
+    els.detail.classList.remove("pop");
+    void els.detail.offsetWidth;
+    els.detail.classList.add("pop");
     els.detailFields.innerHTML = FIELDS.map(([label, key, fmt, cls]) => {
       const raw = typeof key === "function" ? key(p) : p[key];
       const val = fmt ? fmt(raw) : raw;
@@ -167,7 +202,8 @@
   els.showDeleted.addEventListener("change", load);
   els.refresh.addEventListener("click", load);
   els.detailClose.addEventListener("click", closeDetail);
-  document.addEventListener("patients:refresh", load);
+  document.addEventListener("call:ended", () => setTimeout(load, 1500));
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !els.detail.hidden) closeDetail(); });
 
   checkHealth();
   load();

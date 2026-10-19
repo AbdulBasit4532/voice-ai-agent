@@ -3,98 +3,292 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Patient Registry · Lakeside Family Health</title>
-  <link rel="stylesheet" href="./styles.css" />
+  <title>Maya · Voice AI Patient Registration · Lakeside Family Health</title>
+  <meta name="description" content="Call Maya, an AI intake coordinator that registers new patients over the phone in a natural conversation, validates every detail, and stores it securely." />
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/shared/theme.css" />
+  <link rel="stylesheet" href="/landing.css" />
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand">
-      <span class="brand-mark" aria-hidden="true"></span>
-      <div>
-        <h1>Patient Registry</h1>
-        <p class="subtitle">Records collected by the voice intake agent and the REST API</p>
-      </div>
+  <div class="bg-orbs" aria-hidden="true"><span></span><span></span><span></span></div>
+
+  <header class="nav">
+    <a class="brand" href="/">
+      <img src="/assets/favicon.svg" alt="" width="34" height="34" />
+      <span>Lakeside Family Health</span>
+    </a>
+    <nav class="nav-links">
+      <a href="#how">How it works</a>
+      <a href="#collects">What Maya collects</a>
+      <a href="#resilience">Resilience</a>
+      <a href="#api">API</a>
+    </nav>
+    <div class="nav-actions">
+      <a class="btn btn-ghost btn-sm" href="/dashboard/">Open dashboard</a>
+      <button class="btn btn-sm" data-call-start>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+        Talk to Maya
+      </button>
     </div>
-    <div class="topbar-actions">
-      <span id="health" class="pill pill-muted">checking…</span>
-      <a class="btn btn-ghost" href="/patients" target="_blank" rel="noopener">Open API</a>
-      <button id="call-toggle" class="btn" hidden>Talk to the agent</button>
-    </div>
+    <button class="nav-burger" id="nav-burger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button>
   </header>
 
-  <section id="call-panel" class="call-panel" hidden aria-live="polite">
-    <div class="call-head">
-      <div>
-        <strong id="call-status">Connecting…</strong>
-        <span id="call-hint" class="muted">Allow microphone access when prompted. Speak naturally, as if on the phone.</span>
+  <main>
+    <!-- HERO -->
+    <section class="hero">
+      <div class="hero-copy">
+        <span class="eyebrow reveal in"><span class="pill pill-ok"><span class="dot"></span> Live now</span> Voice AI patient registration</span>
+        <h1 class="reveal in" data-delay="1">Meet <em>Maya</em>, the intake coordinator who never puts you on hold.</h1>
+        <p class="lede reveal in" data-delay="2">
+          Call once, speak naturally, and you're registered. Maya asks for what she needs, double-checks every detail,
+          reads it back, and saves it the moment you confirm. No menus, no forms, no waiting room clipboard.
+        </p>
+        <div class="hero-cta reveal in" data-delay="3">
+          <a class="phone-cta" href="tel:+13074871026" id="phone-link">
+            <span class="phone-ring" aria-hidden="true"></span>
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            <span>
+              <small>Call the intake line</small>
+              <strong>+1 (307) 487-1026</strong>
+            </span>
+          </a>
+          <button class="btn btn-lg" data-call-start>
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+            Talk to Maya in your browser
+          </button>
+        </div>
+        <p class="hero-note reveal in" data-delay="4" id="call-disabled-note" hidden>Browser calls are not enabled on this server yet. The phone line still works.</p>
+        <ul class="trust reveal in" data-delay="4">
+          <li><strong id="stat-patients">—</strong><span>patients on file</span></li>
+          <li><strong id="stat-calls">—</strong><span>calls handled</span></li>
+          <li><strong>~4 min</strong><span>average registration</span></li>
+        </ul>
       </div>
-      <button id="call-hangup" class="btn btn-danger">Hang up</button>
-    </div>
-    <div id="call-transcript" class="call-transcript"></div>
-  </section>
 
-  <main class="layout">
-    <section class="panel">
-      <div class="toolbar">
-        <label class="search">
-          <span class="visually-hidden">Search</span>
-          <input id="search" type="search" placeholder="Search by name, phone, city or state" autocomplete="off" />
-        </label>
-        <label class="toggle">
-          <input id="show-deleted" type="checkbox" /> Show deleted
-        </label>
-        <button id="refresh" class="btn">Refresh</button>
-      </div>
-
-      <div id="status" class="status" role="status"></div>
-
-      <div class="table-wrap">
-        <table id="patients-table">
-          <thead>
-            <tr>
-              <th>Patient</th>
-              <th>Date of birth</th>
-              <th>Phone</th>
-              <th>Location</th>
-              <th>Insurance</th>
-              <th>Registered</th>
-            </tr>
-          </thead>
-          <tbody id="patients-body"></tbody>
-        </table>
+      <div class="hero-visual reveal in" data-delay="2">
+        <div class="maya-stage">
+          <div class="maya-blob" aria-hidden="true"></div>
+          <img class="maya" src="/assets/maya.png" alt="Illustration of Maya, a friendly intake coordinator wearing a headset and waving" width="676" height="999" />
+          <div class="speech speech-1">
+            <span class="who">Maya</span>
+            <span class="typed" data-text="Hi! Thanks for calling Lakeside Family Health. Could I have your first and last name?"></span>
+          </div>
+          <div class="speech speech-2">
+            <span class="who">Caller</span>
+            <span>Sarah Davis. That's D-A-V-I-S.</span>
+          </div>
+          <div class="speech speech-3">
+            <span class="who">Maya</span>
+            <span>Got it, Sarah. D-A-V-I-S. And your date of birth?</span>
+          </div>
+          <div class="chip chip-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Validated</div>
+          <div class="chip chip-2"><span class="wave"><i></i><i></i><i></i><i></i><i></i></span> Listening</div>
+          <div class="chip chip-3">🔒 Saved to record</div>
+        </div>
       </div>
     </section>
 
-    <aside id="detail" class="panel detail" hidden>
-      <div class="detail-head">
-        <div>
-          <h2 id="detail-name"></h2>
-          <p id="detail-id" class="mono muted"></p>
-        </div>
-        <button id="detail-close" class="btn btn-ghost" aria-label="Close details">Close</button>
+    <!-- LOGO / FIELD MARQUEE -->
+    <section class="marquee" aria-label="Fields Maya collects">
+      <div class="marquee-track">
+        <span>First name</span><span>Last name</span><span>Date of birth</span><span>Sex</span><span>Phone</span><span>Email</span>
+        <span>Street address</span><span>City</span><span>State</span><span>ZIP</span><span>Insurance provider</span><span>Member ID</span>
+        <span>Preferred language</span><span>Emergency contact</span>
+        <span>First name</span><span>Last name</span><span>Date of birth</span><span>Sex</span><span>Phone</span><span>Email</span>
+        <span>Street address</span><span>City</span><span>State</span><span>ZIP</span><span>Insurance provider</span><span>Member ID</span>
+        <span>Preferred language</span><span>Emergency contact</span>
       </div>
-      <dl id="detail-fields" class="fields"></dl>
+    </section>
 
-      <h3>Appointments</h3>
-      <div id="detail-appointments" class="stack"></div>
+    <!-- HOW IT WORKS -->
+    <section class="section" id="how">
+      <div class="section-head reveal">
+        <span class="kicker">How it works</span>
+        <h2>From "hello" to a saved record in one call</h2>
+        <p>Maya runs the whole intake conversation. Your systems only see clean, validated data.</p>
+      </div>
+      <ol class="steps">
+        <li class="step reveal" data-delay="1">
+          <span class="step-num">01</span>
+          <h3>You call, Maya answers</h3>
+          <p>A real U.S. phone number, answered instantly. Maya introduces herself and asks for your name, no key presses.</p>
+        </li>
+        <li class="step reveal" data-delay="2">
+          <span class="step-num">02</span>
+          <h3>Natural conversation</h3>
+          <p>Answer in any order, correct yourself mid-sentence, or ask to start over. Maya spells names back and checks each detail as you go.</p>
+        </li>
+        <li class="step reveal" data-delay="3">
+          <span class="step-num">03</span>
+          <h3>Read-back and confirmation</h3>
+          <p>Before anything is saved, Maya reads the full record back and asks you to confirm or change any field.</p>
+        </li>
+        <li class="step reveal" data-delay="4">
+          <span class="step-num">04</span>
+          <h3>Saved, confirmed, done</h3>
+          <p>The record lands in the database and appears in the dashboard and API immediately. "You're all set, Sarah."</p>
+        </li>
+      </ol>
+      <div class="flow reveal" aria-hidden="true">
+        <div class="flow-node"><span>📞</span>Caller</div>
+        <div class="flow-arrow"><i></i></div>
+        <div class="flow-node accent"><span>🎧</span>Maya<br /><small>Vapi · GPT-4o</small></div>
+        <div class="flow-arrow"><i></i></div>
+        <div class="flow-node"><span>🛡️</span>Validation<br /><small>Zod schema</small></div>
+        <div class="flow-arrow"><i></i></div>
+        <div class="flow-node"><span>🗄️</span>Database<br /><small>SQLite</small></div>
+        <div class="flow-arrow"><i></i></div>
+        <div class="flow-node"><span>🔗</span>REST API<br /><small>+ dashboard</small></div>
+      </div>
+    </section>
 
-      <h3>Call history</h3>
-      <div id="detail-calls" class="stack"></div>
-    </aside>
+    <!-- WHAT MAYA COLLECTS -->
+    <section class="section section-alt" id="collects">
+      <div class="section-head reveal">
+        <span class="kicker">What Maya collects</span>
+        <h2>The standard U.S. patient demographic set</h2>
+        <p>Required fields are always collected. Optional ones are offered once, so callers opt in instead of being interrogated.</p>
+      </div>
+      <div class="fields-grid">
+        <div class="field-card reveal" data-delay="1">
+          <h3>Required</h3>
+          <ul>
+            <li><b>Name</b> letters, hyphens and apostrophes; spelled back</li>
+            <li><b>Date of birth</b> real date, not in the future</li>
+            <li><b>Sex</b> Male, Female, Other, Decline to answer</li>
+            <li><b>Phone</b> valid 10-digit U.S. number</li>
+            <li><b>Address</b> street, city, 2-letter state, ZIP or ZIP+4</li>
+          </ul>
+        </div>
+        <div class="field-card reveal" data-delay="2">
+          <h3>Offered as opt-in</h3>
+          <ul>
+            <li><b>Email</b> format-checked</li>
+            <li><b>Insurance</b> provider and alphanumeric member ID</li>
+            <li><b>Emergency contact</b> name and phone</li>
+            <li><b>Preferred language</b> defaults to English</li>
+            <li><b>Apartment / unit</b> if applicable</li>
+          </ul>
+        </div>
+        <div class="field-card quote reveal" data-delay="3">
+          <div class="call-avatar small" aria-hidden="true"></div>
+          <blockquote>"I can also collect your insurance information, emergency contact, and preferred language. Would you like to provide any of those?"</blockquote>
+          <cite>Maya, after the required fields are complete</cite>
+        </div>
+      </div>
+    </section>
+
+    <!-- RESILIENCE -->
+    <section class="section" id="resilience">
+      <div class="section-head reveal">
+        <span class="kicker">Built for the messy real world</span>
+        <h2>What happens when things go wrong</h2>
+        <p>Every edge case gets a spoken, specific response, never silence.</p>
+      </div>
+      <div class="features">
+        <article class="feature reveal" data-delay="1">
+          <div class="feature-icon">🗓️</div>
+          <h3>Invalid date of birth</h3>
+          <p>"Born in 2099"? Maya re-asks for just the date, with an example of the format.</p>
+        </article>
+        <article class="feature reveal" data-delay="2">
+          <div class="feature-icon">✏️</div>
+          <h3>Corrections mid-call</h3>
+          <p>"Actually it's D-A-V-I-S, not D-A-V-I-E-S." The field is replaced, re-validated and re-confirmed.</p>
+        </article>
+        <article class="feature reveal" data-delay="3">
+          <div class="feature-icon">👋</div>
+          <h3>Returning callers</h3>
+          <p>A known phone number triggers "It looks like we already have a record for you. Update it instead?"</p>
+        </article>
+        <article class="feature reveal" data-delay="1">
+          <div class="feature-icon">🔁</div>
+          <h3>Start over</h3>
+          <p>Say "scratch that" and Maya discards everything and begins again from your name.</p>
+        </article>
+        <article class="feature reveal" data-delay="2">
+          <div class="feature-icon">⚠️</div>
+          <h3>Database failure</h3>
+          <p>Maya tells the caller honestly that the record couldn't be saved and offers to retry. She never fakes success.</p>
+        </article>
+        <article class="feature reveal" data-delay="3">
+          <div class="feature-icon">🌎</div>
+          <h3>"Hablo español"</h3>
+          <p>Multilingual transcription lets Maya switch languages mid-call while keeping data in a standard format.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- API -->
+    <section class="section section-dark" id="api">
+      <div class="api-grid">
+        <div class="reveal">
+          <span class="kicker light">For engineers</span>
+          <h2>Everything Maya saves is one request away</h2>
+          <p class="light-copy">A small REST API with a consistent <code>{ data, error }</code> envelope, server-side validation, soft deletes and filters. The voice agent and the API share the same schema, so nothing slips through.</p>
+          <ul class="endpoint-list">
+            <li><span class="method get">GET</span><code>/patients</code><span>list · filter by last_name, date_of_birth, phone_number</span></li>
+            <li><span class="method get">GET</span><code>/patients/:id</code><span>single record</span></li>
+            <li><span class="method post">POST</span><code>/patients</code><span>create · 201</span></li>
+            <li><span class="method put">PUT</span><code>/patients/:id</code><span>partial update</span></li>
+            <li><span class="method del">DELETE</span><code>/patients/:id</code><span>soft delete</span></li>
+          </ul>
+          <div class="api-actions">
+            <a class="btn btn-light" href="/patients" target="_blank" rel="noopener">Try GET /patients</a>
+            <a class="btn btn-outline-light" href="/dashboard/">Open the dashboard</a>
+          </div>
+        </div>
+        <div class="code-card reveal" data-delay="2">
+          <div class="code-head"><span class="dots"><i></i><i></i><i></i></span><span>curl</span><button class="copy" id="copy-curl" type="button">Copy</button></div>
+<pre id="curl-snippet"><code>curl -X POST <span class="url">https://your-host</span>/patients \
+  -H 'content-type: application/json' \
+  -d '{
+    "first_name": "Sarah",
+    "last_name": "Davis",
+    "date_of_birth": "07/04/1990",
+    "sex": "Female",
+    "phone_number": "(312) 555-0188",
+    "address_line_1": "15 Main Street",
+    "city": "Chicago",
+    "state": "IL",
+    "zip_code": "60601"
+  }'</code></pre>
+          <div class="code-head code-foot"><span>201 Created</span></div>
+<pre><code>{ "data": { "patient_id": "2ae05302-…", "phone_number": "3125550188", … }, "error": null }</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- FINAL CTA -->
+    <section class="cta">
+      <div class="cta-inner reveal">
+        <img class="cta-maya" src="/assets/maya.png" alt="" width="160" height="160" />
+        <div>
+          <h2>Ready when you are.</h2>
+          <p>Call the line or start a browser call. Maya will take it from there.</p>
+        </div>
+        <div class="cta-actions">
+          <a class="btn btn-light btn-lg" href="tel:+13074871026">Call +1 (307) 487-1026</a>
+          <button class="btn btn-outline-light btn-lg" data-call-start>Talk in browser</button>
+        </div>
+      </div>
+    </section>
   </main>
 
-  <template id="row-template">
-    <tr tabindex="0">
-      <td data-col="name"></td>
-      <td data-col="dob"></td>
-      <td data-col="phone" class="mono"></td>
-      <td data-col="location"></td>
-      <td data-col="insurance"></td>
-      <td data-col="created"></td>
-    </tr>
-  </template>
+  <footer class="footer">
+    <div>
+      <strong>Lakeside Family Health</strong> · Voice AI patient registration demo. Fictional clinic, fictional data.
+    </div>
+    <nav>
+      <a href="/dashboard/">Dashboard</a>
+      <a href="/patients" target="_blank" rel="noopener">API</a>
+      <a href="/health" target="_blank" rel="noopener">Status</a>
+      <a href="https://github.com/AbdulBasit4532/voice-ai-agent" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </footer>
 
-  <script src="./app.js" defer></script>
-  <script type="module" src="./webcall.js"></script>
+  <div id="call-root"></div>
+  <script src="/landing.js" defer></script>
+  <script type="module" src="/shared/webcall.js"></script>
 </body>
 </html>
