@@ -21,6 +21,10 @@ export function testContext(): AppContext {
     SEED_ON_BOOT: "false",
     VAPI_SERVER_SECRET: "test-secret",
     LOG_LEVEL: "silent",
+    // Tests must not depend on whatever the developer has in their local .env.
+    VAPI_PUBLIC_KEY: "",
+    VAPI_ASSISTANT_ID: "",
+    PUBLIC_BASE_URL: undefined as unknown as string,
   });
   return createContext(config, pino({ level: "silent" }));
 }
