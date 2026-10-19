@@ -4,8 +4,9 @@ A voice agent that answers a real U.S. phone number, registers a new patient thr
 
 | Deliverable | Where |
 |---|---|
-| Phone number | **`+1 (___) ___-____`** — fill in after running `npm run vapi:provision` (see [Go live](#go-live-phone-number)) |
-| API base URL | **`https://<your-deployment>`** — e.g. `https://voice-patient-registration.up.railway.app` |
+| Phone number | **+1 (307) 487-1026** (Vapi, U.S.) |
+| API base URL | **`https://<your-deployment>`** — set after deploying (see [Go live](#go-live-phone-number)); a temporary tunnel URL is used during development |
+| Browser call | **Talk to the agent** button on `/dashboard/` (no phone needed) |
 | Dashboard | `GET /dashboard/` on the API base URL |
 | Health | `GET /health` |
 
@@ -142,7 +143,7 @@ npm run vapi:provision
 #   Webhook URL  : https://.../voice/vapi/webhook
 ```
 
-The script is idempotent: it updates the assistant if one with the same name exists and re-attaches the existing number. Put the printed `VAPI_ASSISTANT_ID` / `VAPI_PHONE_NUMBER_ID` in `.env` to pin them. Re-run after any prompt change.
+Free Vapi numbers need an area code and stock varies; the script starts with `VAPI_AREA_CODE` (default 415) and automatically follows Vapi's "try one of …" hint when that code is out of stock. The script is idempotent: it updates the assistant if one with the same name exists and re-attaches the existing number. Put the printed `VAPI_ASSISTANT_ID` / `VAPI_PHONE_NUMBER_ID` in `.env` to pin them. Re-run after any prompt change.
 
 To inspect the exact assistant configuration without calling Vapi: `npm run vapi:print-config`.
 

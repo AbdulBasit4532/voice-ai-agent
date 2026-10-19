@@ -26,6 +26,31 @@ async function vapi<T>(method: string, path: string, body?: unknown): Promise<T>
 interface Assistant { id: string; name: string }
 interface PhoneNumber { id: string; number?: string; assistantId?: string; name?: string; provider?: string }
 
+/**
+ * Free Vapi numbers require an area code and stock varies. When the preferred code is out of
+ * stock Vapi answers 400 with "Hint: Try one of 307, 659, 651." — we follow the hint automatically.
+ */
+async function requestFreeNumber(assistantId: string, areaCode: string, attempt = 0): Promise<PhoneNumber> {
+  try {
+    const n = await vapi<PhoneNumber>("POST", "/phone-number", {
+      provider: "vapi",
+      name: ASSISTANT_NAME,
+      assistantId,
+      numberDesiredAreaCode: areaCode,
+    });
+    console.log(`Requested a free Vapi U.S. number (area code ${areaCode})`);
+    return n;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    const hinted = msg.match(/Try one of ([\d,\s]+)/)?.[1]?.split(",").map((s) => s.trim()).filter(Boolean) ?? [];
+    if (attempt < 3 && hinted.length) {
+      console.log(`Area code ${areaCode} unavailable; trying ${hinted[0]}`);
+      return requestFreeNumber(assistantId, hinted[0], attempt + 1);
+    }
+    throw err;
+  }
+}
+
 async function main(): Promise<void> {
   const printOnly = process.argv.includes("--print");
   const publicBaseUrl = config.PUBLIC_BASE_URL ?? "https://example.invalid";
@@ -81,13 +106,7 @@ async function main(): Promise<void> {
         });
         console.log(`Imported Twilio number ${config.TWILIO_PHONE_NUMBER} into Vapi`);
       } else {
-        number = await vapi<PhoneNumber>("POST", "/phone-number", {
-          provider: "vapi",
-          name: ASSISTANT_NAME,
-          assistantId,
-          ...(config.VAPI_AREA_CODE ? { numberDesiredAreaCode: config.VAPI_AREA_CODE } : {}),
-        });
-        console.log("Requested a free Vapi U.S. number");
+        number = await requestFreeNumber(assistantId, config.VAPI_AREA_CODE || "415");
       }
     }
   } catch (err) {
