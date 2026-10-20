@@ -32,26 +32,167 @@ export type Sex = (typeof SEX_VALUES)[number];
 
 // ---------- helpers ----------
 
+const MONTHS: Record<string, number> = {
+  january: 1, jan: 1,
+  february: 2, feb: 2,
+  march: 3, mar: 3,
+  april: 4, apr: 4,
+  may: 5,
+  june: 6, jun: 6,
+  july: 7, jul: 7,
+  august: 8, aug: 8,
+  september: 9, sep: 9, sept: 9,
+  october: 10, oct: 10,
+  november: 11, nov: 11,
+  december: 12, dec: 12,
+};
+
+const WORD_NUMBERS: Record<string, number> = {
+  zero: 0, oh: 0, o: 0,
+  one: 1, first: 1,
+  two: 2, second: 2,
+  three: 3, third: 3,
+  four: 4, fourth: 4,
+  five: 5, fifth: 5,
+  six: 6, sixth: 6,
+  seven: 7, seventh: 7,
+  eight: 8, eighth: 8,
+  nine: 9, ninth: 9,
+  ten: 10, tenth: 10,
+  eleven: 11, eleventh: 11,
+  twelve: 12, twelfth: 12,
+  thirteen: 13, thirteenth: 13,
+  fourteen: 14, fourteenth: 14,
+  fifteen: 15, fifteenth: 15,
+  sixteen: 16, sixteenth: 16,
+  seventeen: 17, seventeenth: 17,
+  eighteen: 18, eighteenth: 18,
+  nineteen: 19, nineteenth: 19,
+  twenty: 20, twentieth: 20,
+  thirty: 30, thirtieth: 30,
+  forty: 40,
+  fifty: 50,
+  sixty: 60,
+  seventy: 70,
+  eighty: 80,
+  ninety: 90,
+};
+
+function replaceSpokenDigits(raw: string): string {
+  return raw.replace(
+    /\b(zero|oh|one|two|three|four|five|six|seven|eight|nine)\b/gi,
+    (w) => String(WORD_NUMBERS[w.toLowerCase()] ?? w),
+  );
+}
+
 export function normalizePhone(raw: string): string | null {
   let digits = raw.replace(/\D/g, "");
+  if (digits.length < 10) {
+    digits = replaceSpokenDigits(raw).replace(/\D/g, "");
+  }
   if (digits.length === 11 && digits.startsWith("1")) digits = digits.slice(1);
   if (digits.length !== 10) return null;
-  // NANP: area code and exchange cannot start with 0 or 1.
-  if (/^[01]/.test(digits) || /^[01]/.test(digits.slice(3, 4))) return null;
+  // Area code cannot start with 0 or 1.
+  if (/^[01]/.test(digits)) return null;
   return digits;
 }
 
-/** Accepts MM/DD/YYYY, M/D/YYYY, YYYY-MM-DD. Returns ISO YYYY-MM-DD or null. */
+function parseSpokenYear(tokens: string[]): number | null {
+  if (tokens.length === 0) return null;
+  const joined = tokens.join(" ");
+  if (/^\d{4}$/.test(joined)) return Number(joined);
+
+  const nums = tokens.map((t) => (/^\d+$/.test(t) ? Number(t) : WORD_NUMBERS[t]));
+  // Handle "two thousand (and) two" / "two thousand twenty four"
+  if (tokens[0] === "two" && tokens[1] === "thousand") {
+    const rest = tokens.slice(2);
+    if (rest.length === 0) return 2000;
+    const sub = rest.map((t) => (/^\d+$/.test(t) ? Number(t) : WORD_NUMBERS[t]));
+    if (sub.some((n) => n === undefined)) return null;
+    const sum = sub.reduce((a, b) => (a ?? 0) + (b ?? 0), 0) ?? 0;
+    return 2000 + sum;
+  }
+  if (nums.some((n) => n === undefined)) return null;
+  const v = nums as number[];
+  if (v.length === 1 && v[0] >= 1900 && v[0] <= 2099) return v[0];
+  // e.g. ["nineteen", "eighty", "five"] -> 1900 + 85, ["nineteen", "ninety"] -> 1990, ["twenty", "twenty", "two"] -> 2022
+  if (v.length >= 2 && v[0] >= 19 && v[0] <= 20) {
+    const century = v[0] * 100;
+    const rest = v.slice(1);
+    if (rest.length === 1) return century + rest[0];
+    if (rest.length === 2) {
+      if (rest[0] === 0) return century + rest[1]; // "nineteen oh five"
+      if (rest[0] >= 20 && rest[1] < 10) return century + rest[0] + rest[1];
+    }
+  }
+  return null;
+}
+
+function parseSpokenMonthDate(s: string): { y: number; m: number; d: number } | null {
+  const cleaned = s
+    .toLowerCase()
+    .replace(/[,.\-\/]+/g, " ")
+    .replace(/\b(\d+)(st|nd|rd|th)\b/g, "$1")
+    .replace(/\b(the|of|and|in|on)\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const tokens = cleaned.split(" ").filter(Boolean);
+  const monthIdx = tokens.findIndex((t) => MONTHS[t] !== undefined);
+  if (monthIdx === -1) return null;
+  const m = MONTHS[tokens[monthIdx]];
+
+  let dayTokens: string[] = [];
+  let yearTokens: string[] = [];
+  if (monthIdx === 0) {
+    // e.g. "november second two thousand two" or "march twenty first nineteen eighty five"
+    const after = tokens.slice(1);
+    if (after.length < 2) return null;
+    if (
+      after.length >= 3 &&
+      (after[0] === "twenty" || after[0] === "thirty") &&
+      WORD_NUMBERS[after[1]] !== undefined &&
+      WORD_NUMBERS[after[1]] >= 1 &&
+      WORD_NUMBERS[after[1]] <= 9
+    ) {
+      dayTokens = after.slice(0, 2);
+      yearTokens = after.slice(2);
+    } else {
+      dayTokens = after.slice(0, 1);
+      yearTokens = after.slice(1);
+    }
+  } else {
+    // e.g. "2nd november 2002" or "twenty first march nineteen eighty five"
+    dayTokens = tokens.slice(0, monthIdx);
+    yearTokens = tokens.slice(monthIdx + 1);
+  }
+
+  let d = 0;
+  for (const dt of dayTokens) {
+    const n = /^\d+$/.test(dt) ? Number(dt) : WORD_NUMBERS[dt];
+    if (n === undefined) return null;
+    d += n;
+  }
+  if (d < 1 || d > 31) return null;
+
+  const y = parseSpokenYear(yearTokens);
+  if (!y) return null;
+  return { y, m, d };
+}
+
+/** Accepts MM/DD/YYYY, M/D/YYYY, YYYY-MM-DD, and natural/spoken dates ("November 2, 2002", "November second two thousand and two"). Returns ISO YYYY-MM-DD or null. */
 export function normalizeDate(raw: string): string | null {
   const s = raw.trim();
   let y: number, m: number, d: number;
   let match = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
   if (match) {
     m = Number(match[1]); d = Number(match[2]); y = Number(match[3]);
-  } else if ((match = s.match(/^(\d{4})-(\d{2})-(\d{2})$/))) {
+  } else if ((match = s.match(/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})$/))) {
     y = Number(match[1]); m = Number(match[2]); d = Number(match[3]);
   } else {
-    return null;
+    const spoken = parseSpokenMonthDate(s);
+    if (!spoken) return null;
+    ({ y, m, d } = spoken);
   }
   const date = new Date(Date.UTC(y, m - 1, d));
   if (date.getUTCFullYear() !== y || date.getUTCMonth() !== m - 1 || date.getUTCDate() !== d) return null;
@@ -81,16 +222,24 @@ export function normalizeState(raw: string): string | null {
 }
 
 export function normalizeSex(raw: string): Sex | null {
-  const s = raw.trim().toLowerCase();
-  if (["male", "m", "man"].includes(s)) return "Male";
-  if (["female", "f", "woman"].includes(s)) return "Female";
-  if (["other", "non-binary", "nonbinary", "intersex"].includes(s)) return "Other";
-  if (/decline|prefer not|rather not|skip/.test(s)) return "Decline to Answer";
+  const s = raw.trim().toLowerCase().replace(/[.,!?]/g, "");
+  const collapsed = s.replace(/[\s\-]+/g, "");
+  if (["male", "m", "man", "mail", "mailed", "boy", "gentleman"].includes(s) || collapsed === "male") return "Male";
+  if (["female", "f", "woman", "girl", "lady"].includes(s) || collapsed === "female") return "Female";
+  if (["other", "non-binary", "nonbinary", "intersex", "nb", "enby"].includes(s)) return "Other";
+  if (/decline|prefer not|rather not|skip|private|pass/.test(s)) return "Decline to Answer";
   return null;
 }
 
 export function normalizeZip(raw: string): string | null {
-  const s = raw.replace(/\s+/g, "");
+  let s = raw.replace(/\s+/g, "");
+  if (!/^\d/.test(s)) {
+    // Allow spoken digit sequences like "six zero six zero one"
+    const words = raw.trim().toLowerCase().replace(/[,.\-]+/g, " ").split(/\s+/).filter(Boolean);
+    if (words.length >= 5 && words.every((w) => /^\d+$/.test(w) || (WORD_NUMBERS[w] !== undefined && WORD_NUMBERS[w] <= 9))) {
+      s = words.map((w) => (/^\d+$/.test(w) ? w : String(WORD_NUMBERS[w]))).join("");
+    }
+  }
   if (/^\d{5}$/.test(s)) return s;
   if (/^\d{5}-?\d{4}$/.test(s)) return `${s.slice(0, 5)}-${s.slice(-4)}`;
   return null;
@@ -101,14 +250,30 @@ const trimmed = (max: number) => z.string().trim().min(1).max(max);
 // Unicode letters, spaces, hyphens and apostrophes (covers O'Brien, Smith-Jones, José).
 const NAME_RE = /^[\p{L}][\p{L} '\-]*$/u;
 
+function normalizeSpelledName(raw: string): string {
+  const cleaned = raw.trim().replace(/\.+$/g, "");
+  // Collapse letter-by-letter spellings like "D-A-N-N-Y" or "D A N N Y" or "D.A.N.N.Y"
+  const parts = cleaned.split(/[\s\-.]+/).filter(Boolean);
+  if (parts.length >= 2 && parts.every((p) => /^[\p{L}]$/u.test(p))) {
+    const word = parts.join("").toLowerCase();
+    return word.charAt(0).toUpperCase() + word.slice(1);
+  }
+  return cleaned;
+}
+
 // ---------- field schemas ----------
 
 const nameField = z
   .string()
   .trim()
-  .min(1, "is required")
-  .max(50, "must be 50 characters or fewer")
-  .regex(NAME_RE, "may only contain letters, spaces, hyphens and apostrophes");
+  .transform(normalizeSpelledName)
+  .pipe(
+    z
+      .string()
+      .min(1, "is required")
+      .max(50, "must be 50 characters or fewer")
+      .regex(NAME_RE, "may only contain letters, spaces, hyphens and apostrophes"),
+  );
 
 const dobField = z
   .string()

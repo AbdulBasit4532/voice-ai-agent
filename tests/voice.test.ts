@@ -107,7 +107,7 @@ describe("ToolExecutor", () => {
     expect(r.result.say).toMatch(/register you as a new patient/);
   });
 
-  it("offers appointment slots and books one", async () => {
+  it("offers appointment slots and books one by slot_id, doctor name, or ordinal", async () => {
     const patient = ctx.patients.findByPhone("3125550188")!;
     const slots = await ctx.tools.execute({ id: "1", name: "get_appointment_slots", arguments: {} }, meta);
     expect((slots.result.slots as unknown[]).length).toBe(3);
@@ -116,7 +116,15 @@ describe("ToolExecutor", () => {
       meta,
     );
     expect(booked.result.ok).toBe(true);
-    expect(ctx.appointments.listForPatient(patient.patient_id)).toHaveLength(1);
+    expect(booked.result.say).toMatch(/appointment is confirmed/i);
+
+    const bookedByDoctor = await ctx.tools.execute(
+      { id: "3", name: "schedule_appointment", arguments: { patient_id: patient.patient_id, slot_id: "Dr. Patel" } },
+      meta,
+    );
+    expect(bookedByDoctor.result.ok).toBe(true);
+    expect(bookedByDoctor.result.provider_name).toBe("Dr. Patel");
+    expect(ctx.appointments.listForPatient(patient.patient_id)).toHaveLength(2);
   });
 
   it("unknown tools are rejected gracefully", async () => {

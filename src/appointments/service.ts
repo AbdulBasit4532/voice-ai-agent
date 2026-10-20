@@ -56,8 +56,41 @@ export class AppointmentService {
     return slots;
   }
 
+  resolveSlot(slotId: string): Slot | undefined {
+    const slots = this.availableSlots();
+    const raw = (slotId ?? "").trim();
+    if (!raw) return undefined;
+    const lower = raw.toLowerCase();
+
+    // 1. Exact slot_id or ISO timestamp match
+    const exact = slots.find((s) => s.slot_id.toLowerCase() === lower || s.scheduled_for.toLowerCase() === lower);
+    if (exact) return exact;
+
+    // 2. Ordinal / numeric choice ("1", "slot 1", "option 1", "first", etc.)
+    if (/^(slot[\s\-_]*)?1$|^(option[\s\-_]*)?1$|\bfirst\b/.test(lower)) return slots[0];
+    if (/^(slot[\s\-_]*)?2$|^(option[\s\-_]*)?2$|\bsecond\b/.test(lower)) return slots[1];
+    if (/^(slot[\s\-_]*)?3$|^(option[\s\-_]*)?3$|\bthird\b/.test(lower)) return slots[2];
+
+    // 3. Provider name match ("Dr. Patel", "Patel", "Nguyen", "Alvarez")
+    const byProvider = slots.find((s) => {
+      const pLower = s.provider_name.toLowerCase();
+      const lastName = pLower.replace(/^dr\.?\s*/i, "");
+      return lower.includes(pLower) || (lastName.length > 2 && lower.includes(lastName));
+    });
+    if (byProvider) return byProvider;
+
+    // 4. Spoken date / weekday / time substring match ("Wednesday", "9:30", "1:00", "3:30")
+    const bySpoken = slots.find((s) => {
+      const spLower = s.spoken.toLowerCase();
+      return spLower.includes(lower) || lower.includes(spLower);
+    });
+    if (bySpoken) return bySpoken;
+
+    return undefined;
+  }
+
   book(patientId: string, slotId: string, reason?: string | null): Appointment {
-    const slot = this.availableSlots().find((s) => s.slot_id === slotId);
+    const slot = this.resolveSlot(slotId);
     if (!slot) throw new ValidationError({ slot_id: "is not one of the offered slots" });
     const patient = this.db
       .prepare("SELECT patient_id FROM patients WHERE patient_id = ? AND deleted_at IS NULL")

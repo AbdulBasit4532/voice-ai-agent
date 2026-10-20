@@ -83,12 +83,13 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   },
   {
     name: "schedule_appointment",
-    description: "Book one of the offered appointment slots for the registered patient.",
+    description:
+      "Book one of the offered appointment slots for the registered patient. Call this whenever the caller chooses an appointment option, then read back the confirmed doctor and date/time before ending the call.",
     parameters: {
       type: "object",
       properties: {
-        patient_id: { type: "string" },
-        slot_id: { type: "string", description: "slot_id from get_appointment_slots" },
+        patient_id: { type: "string", description: "patient_id returned by save_patient or update_patient" },
+        slot_id: { type: "string", description: "slot-1, slot-2, or slot-3 (or doctor name / spoken time)" },
         reason: { type: "string", description: "Optional reason for visit" },
       },
       required: ["patient_id", "slot_id"],

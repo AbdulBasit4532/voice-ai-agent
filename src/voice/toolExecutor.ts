@@ -111,7 +111,7 @@ export class ToolExecutor {
       case "get_appointment_slots":
         return { ok: true, slots: this.deps.appointments.availableSlots() };
       case "schedule_appointment":
-        return this.scheduleAppointment(args);
+        return this.scheduleAppointment(args, meta);
       case "log_call_outcome":
         this.deps.calls.ensure(meta.callId, meta.provider, meta.callerNumber ?? null);
         this.deps.calls.update(meta.callId, {
@@ -162,11 +162,16 @@ export class ToolExecutor {
 
     const created = this.deps.patients.create(payload);
     this.recordOutcome(meta, created.patient_id, "registered", payload);
+    const slots = this.deps.appointments.availableSlots();
+    const slotSummary = slots.map((s) => `${s.provider_name} on ${s.spoken}`).join(", or ");
     return {
       ok: true,
       action: "created",
       patient_id: created.patient_id,
-      say: `You're all set, ${created.first_name}. You're registered with us.`,
+      available_slots: slots,
+      say: `You're all set, ${created.first_name}. You're registered with us. Would you also like to schedule your first appointment? We have openings with ${slotSummary}.`,
+      instruction:
+        "Tell the caller they are registered and immediately offer the appointment slots in `available_slots`. Do NOT end the call yet. Wait for the caller's response: if they choose a slot, call `schedule_appointment` with `patient_id` and `slot_id`, then read back the confirmed appointment before asking if they need anything else.",
     };
   }
 
@@ -176,17 +181,35 @@ export class ToolExecutor {
     log.info({ event: "voice.collected_payload", call_id: meta.callId, patient_id, payload }, "update payload");
     const updated = this.deps.patients.update(String(patient_id ?? ""), payload);
     this.recordOutcome(meta, updated.patient_id, "updated", payload);
+    const slots = this.deps.appointments.availableSlots();
+    const slotSummary = slots.map((s) => `${s.provider_name} on ${s.spoken}`).join(", or ");
     return {
       ok: true,
       action: "updated",
       patient_id: updated.patient_id,
-      say: `Thanks, ${updated.first_name}. Your information is updated.`,
+      available_slots: slots,
+      say: `Thanks, ${updated.first_name}. Your information is updated. Would you also like to schedule an appointment? We have openings with ${slotSummary}.`,
+      instruction:
+        "Tell the caller their information is updated and offer the appointment slots in `available_slots`. Do NOT end the call yet. If they choose a slot, call `schedule_appointment` and confirm the booking before ending the call.",
     };
   }
 
-  private scheduleAppointment(args: Record<string, unknown>): Record<string, unknown> {
+  private scheduleAppointment(args: Record<string, unknown>, meta?: CallMeta): Record<string, unknown> {
+    let patientId = String(args.patient_id ?? "").trim();
+    if (meta?.callId) {
+      const fromCall = this.deps.calls.get(meta.callId)?.patient_id;
+      if (!patientId && fromCall) {
+        patientId = fromCall;
+      } else if (patientId && fromCall && patientId !== fromCall) {
+        try {
+          this.deps.patients.get(patientId);
+        } catch {
+          patientId = fromCall;
+        }
+      }
+    }
     const appt = this.deps.appointments.book(
-      String(args.patient_id ?? ""),
+      patientId,
       String(args.slot_id ?? ""),
       args.reason ? String(args.reason) : null,
     );
@@ -197,7 +220,9 @@ export class ToolExecutor {
       scheduled_for: appt.scheduled_for,
       spoken: slot?.spoken ?? appt.scheduled_for,
       provider_name: appt.provider_name,
-      say: `You're booked with ${appt.provider_name} on ${slot?.spoken ?? appt.scheduled_for}.`,
+      say: `Your appointment is confirmed with ${appt.provider_name} for ${slot?.spoken ?? appt.scheduled_for}. Is there anything else I can help you with today?`,
+      instruction:
+        "Speak `say` to clearly confirm the booked appointment to the caller. Wait for their reply before saying goodbye and ending the call.",
     };
   }
 
