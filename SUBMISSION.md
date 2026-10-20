@@ -4,6 +4,34 @@ Take-home technical assessment · Voice AI / Conversational AI Engineer
 
 This file is the packet requested under **Submission Instructions** in the challenge document. Secrets are not included; none are required to review the live system.
 
+## Email you can send
+
+Subject: **Voice AI Agent — Patient Registration — submission**
+
+```
+Hello,
+
+Please find my submission for the Voice AI Agent — Patient Registration take-home assessment.
+
+• Repository:  https://github.com/AbdulBasit4532/voice-ai-agent
+• Phone number:  +1 (307) 487-1026
+• API base URL:  https://clerical-parted-enlisted.ngrok-free.dev
+
+No credentials are required. The REST API is unauthenticated (fictional data only).
+
+Landing page:  https://clerical-parted-enlisted.ngrok-free.dev/
+Dashboard:     https://clerical-parted-enlisted.ngrok-free.dev/dashboard/
+Health:        https://clerical-parted-enlisted.ngrok-free.dev/health
+Patients:      https://clerical-parted-enlisted.ngrok-free.dev/patients
+
+The agent is Maya at Lakeside Family Health (fictional). Speak naturally to register; she will read the record back and save only after you confirm. If you cannot dial the U.S. number, use “Talk to Maya” on the landing page. Free ngrok may show a browser warning — click through, or send header ngrok-skip-browser-warning: 1 on API calls.
+
+Please do not enter real patient data. Full testing notes are in SUBMISSION.md in the repository.
+
+Thank you,
+Abdul Basit
+```
+
 ---
 
 ## 1. Repository

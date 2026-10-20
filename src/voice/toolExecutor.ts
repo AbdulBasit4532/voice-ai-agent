@@ -150,6 +150,8 @@ export class ToolExecutor {
       found: true,
       patient: publicView(existing),
       say: `It looks like we already have a record for ${existing.first_name} ${existing.last_name}. Would you like to update your information instead?`,
+      instruction:
+        "Ask the caller the question in `say`. If they say YES, confirm what they want to change and call `update_patient` with `patient_id`. If they say NO (for example, they are a family member sharing this phone number, or want a separate new record), keep the new caller's own details, continue collecting the remaining required fields, and call `save_patient` to create a brand-new record.",
     };
   }
 
@@ -157,19 +159,6 @@ export class ToolExecutor {
     const payload = stripEmpty(args);
     // Observability requirement: the final collected payload goes to stdout before the write.
     log.info({ event: "voice.collected_payload", call_id: meta.callId, payload }, "final collected patient payload");
-
-    const existing = payload.phone_number ? this.deps.patients.findByPhone(String(payload.phone_number)) : null;
-    if (existing) {
-      // Guardrail: the model should have used update_patient; do the right thing instead of duplicating.
-      const updated = this.deps.patients.update(existing.patient_id, payload);
-      this.recordOutcome(meta, updated.patient_id, "updated", payload);
-      return {
-        ok: true,
-        action: "updated",
-        patient_id: updated.patient_id,
-        say: `You're all set, ${updated.first_name}. I've updated your existing record.`,
-      };
-    }
 
     const created = this.deps.patients.create(payload);
     this.recordOutcome(meta, created.patient_id, "registered", payload);

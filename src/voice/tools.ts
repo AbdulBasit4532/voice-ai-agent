@@ -59,7 +59,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     name: "save_patient",
     description:
-      "Create the patient record. Call ONLY after the caller has heard the full read-back and confirmed it is correct. Include every field collected.",
+      "Create a brand-new patient record. Call ONLY after the caller has heard the full read-back and confirmed it is correct. Always use this for a new patient, even if their phone number was already on file for someone else.",
     parameters: {
       type: "object",
       properties: PATIENT_PROPERTIES,
@@ -69,7 +69,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     name: "update_patient",
     description:
-      "Update an existing patient (returning caller) with the fields that changed. Call ONLY after the caller confirmed the changes.",
+      "Update an existing patient (returning caller) with the fields that changed. Call ONLY when lookup_patient_by_phone matched AND the caller explicitly said yes to updating that existing record.",
     parameters: {
       type: "object",
       properties: { patient_id: { type: "string" }, ...PATIENT_PROPERTIES },

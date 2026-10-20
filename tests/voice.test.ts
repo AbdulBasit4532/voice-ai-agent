@@ -55,12 +55,26 @@ describe("ToolExecutor", () => {
     expect(none.result).toEqual({ ok: true, found: false });
   });
 
-  it("save_patient with an existing phone updates instead of duplicating", async () => {
-    const r = await ctx.tools.execute({ id: "1", name: "save_patient", arguments: { ...VALID_PATIENT, city: "Evanston" } }, meta);
-    expect(r.result.action).toBe("updated");
+  it("save_patient with an existing phone still creates a new record when a different person shares the phone", async () => {
+    const r = await ctx.tools.execute(
+      { id: "1", name: "save_patient", arguments: { ...VALID_PATIENT, first_name: "Danny", date_of_birth: "11/02/2002" } },
+      meta,
+    );
+    expect(r.result.ok).toBe(true);
+    expect(r.result.action).toBe("created");
     const list = ctx.patients.list({ phone_number: "3125550188" });
-    expect(list.total).toBe(1);
-    expect(list.items[0].city).toBe("Evanston");
+    expect(list.total).toBe(2);
+  });
+
+  it("update_patient updates the existing record when a returning caller chooses to update", async () => {
+    const existing = ctx.patients.findByPhone("3125550188")!;
+    const r = await ctx.tools.execute(
+      { id: "1", name: "update_patient", arguments: { patient_id: existing.patient_id, city: "Evanston" } },
+      meta,
+    );
+    expect(r.result.ok).toBe(true);
+    expect(r.result.action).toBe("updated");
+    expect(ctx.patients.get(existing.patient_id).city).toBe("Evanston");
   });
 
   it("save_patient with invalid data returns a field-specific re-prompt instead of throwing", async () => {
