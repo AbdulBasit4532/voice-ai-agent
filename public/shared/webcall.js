@@ -72,8 +72,35 @@ function setStatus(text, mode) {
   els.wave.classList.toggle("idle", mode !== "speaking");
 }
 
+function extractErrorMessage(e) {
+  if (!e) return "The call could not be completed.";
+  if (typeof e === "string") return e;
+  const candidates = [
+    e?.error?.message?.msg,
+    e?.error?.message?.errorMsg,
+    e?.error?.message?.message,
+    typeof e?.error?.message === "string" ? e.error.message : null,
+    e?.error?.msg,
+    e?.error?.errorMsg,
+    e?.error?.errorDetail,
+    typeof e?.error === "string" ? e.error : null,
+    e?.errorMsg,
+    typeof e?.message === "string" ? e.message : null,
+  ];
+  for (const c of candidates) {
+    if (typeof c === "string" && c.trim() && c.trim() !== "[object Object]") {
+      const msg = c.trim();
+      if (/meeting has ended|ejected|did-not-receive-customer-audio/i.test(msg)) {
+        return "No microphone audio reached Maya. Please check that your microphone is unmuted and allowed in your browser, then try again.";
+      }
+      return msg;
+    }
+  }
+  return "The call ended unexpectedly. Please check your microphone and try again.";
+}
+
 function showError(msg) {
-  els.error.textContent = msg;
+  els.error.textContent = typeof msg === "string" ? msg : extractErrorMessage(msg);
   els.error.hidden = false;
 }
 
@@ -110,10 +137,27 @@ async function ensureSdk() {
   if (vapi) return;
   const mod = await import("https://esm.sh/@vapi-ai/web@2");
   vapi = new mod.default(config.publicKey);
+  vapi.on("call-start-progress", (ev) => {
+    // Prevent Daily's Krisp noise-cancellation WASM on esm.sh from failing or muting the mic stream.
+    if (ev?.stage === "daily-call-object-creation" && ev?.status === "completed" && vapi?.call) {
+      const origUpdate = vapi.call.updateInputSettings?.bind(vapi.call);
+      if (origUpdate) {
+        vapi.call.updateInputSettings = (settings) => {
+          if (settings?.audio?.processor?.type === "noise-cancellation") {
+            return Promise.resolve();
+          }
+          return origUpdate(settings);
+        };
+      }
+    }
+  });
   vapi.on("call-start", () => {
     active = true;
     startedAt = Date.now();
+    clearInterval(timerId);
     timerId = setInterval(tick, 1000);
+    els.error.hidden = true;
+    try { vapi.setMuted(false); } catch {}
     setStatus("Connected", "listening");
     els.hangup.textContent = "Hang up";
   });
@@ -133,10 +177,16 @@ async function ensureSdk() {
     if (m?.type === "tool-calls" || m?.type === "function-call") setStatus("Checking that for you…", "listening");
   });
   vapi.on("error", (e) => {
-    console.error("vapi error", e);
-    const msg = e?.error?.message || e?.errorMsg || e?.message || "The call could not be started.";
+    console.warn("vapi event error", e);
+    // Ignore non-fatal audio processor / level observer errors so the active call continues uninterrupted.
+    const nonFatalTypes = ["audio-processing-setup-error", "local-audio-level-observer-error", "audio-observer-setup-error"];
+    if (nonFatalTypes.includes(e?.type) || nonFatalTypes.includes(e?.stage)) {
+      try { vapi.call?.setLocalAudio?.(true); } catch {}
+      return;
+    }
+    const msg = extractErrorMessage(e);
     showError(/payment|billing|card/i.test(msg) ? `${msg} (Add a payment method in the Vapi dashboard.)` : msg);
-    setStatus("Call failed", "idle");
+    setStatus("Call ended", "idle");
     active = false;
     clearInterval(timerId);
     els.hangup.textContent = "Close";
@@ -147,13 +197,19 @@ async function startCall() {
   if (!config?.enabled) return;
   reset();
   els.overlay.hidden = false;
-  setStatus("Connecting…", "idle");
+  setStatus("Checking microphone…", "idle");
   try {
+    // Request mic permission & wake up the audio input device BEFORE Vapi starts its 15-second audio timeout.
+    if (navigator.mediaDevices?.getUserMedia) {
+      const preStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      preStream.getTracks().forEach((t) => t.stop());
+    }
+    setStatus("Connecting…", "idle");
     await ensureSdk();
     await vapi.start(config.assistantId);
   } catch (err) {
     console.error(err);
-    showError(err?.message || "Could not start the call. Check microphone permission and try again.");
+    showError(extractErrorMessage(err));
     setStatus("Call failed", "idle");
     els.hangup.textContent = "Close";
   }
