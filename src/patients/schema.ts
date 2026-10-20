@@ -406,6 +406,8 @@ export interface PatientRecord extends PatientCreate {
   insurance_member_id: string | null;
   emergency_contact_name: string | null;
   emergency_contact_phone: string | null;
+  next_appointment_at?: string | null;
+  next_appointment_provider?: string | null;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;

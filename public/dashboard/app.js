@@ -129,7 +129,11 @@
       tr.querySelector('[data-col="dob"]').textContent = p.date_of_birth;
       tr.querySelector('[data-col="phone"]').textContent = fmtPhone(p.phone_number);
       tr.querySelector('[data-col="location"]').textContent = `${p.city}, ${p.state} ${p.zip_code}`;
-      tr.querySelector('[data-col="insurance"]').textContent = p.insurance_provider || "—";
+      tr.querySelector('[data-col="insurance"]').innerHTML = p.next_appointment_provider
+        ? `<span class="pill pill-ok"><span class="dot"></span>${esc(p.next_appointment_provider)}</span><span class="sub">${esc(fmtDate(p.next_appointment_at))}</span>`
+        : p.insurance_provider
+          ? esc(p.insurance_provider)
+          : '<span class="muted">No appointment</span>';
       tr.querySelector('[data-col="created"]').textContent = fmtDate(p.created_at);
       tr.addEventListener("click", () => select(p.patient_id));
       tr.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(p.patient_id); } });

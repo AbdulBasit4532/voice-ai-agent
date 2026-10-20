@@ -12,6 +12,7 @@ const disabledNote = document.getElementById("call-disabled-note");
 let vapi = null;
 let config = null;
 let active = false;
+let callEndedNormally = false;
 let timerId = null;
 let startedAt = 0;
 
@@ -90,7 +91,10 @@ function extractErrorMessage(e) {
   for (const c of candidates) {
     if (typeof c === "string" && c.trim() && c.trim() !== "[object Object]") {
       const msg = c.trim();
-      if (/meeting has ended|ejected|did-not-receive-customer-audio/i.test(msg)) {
+      if (/meeting has ended|ejected/i.test(msg)) {
+        return "__NORMAL_END__";
+      }
+      if (/did-not-receive-customer-audio/i.test(msg)) {
         return "No microphone audio reached Maya. Please check that your microphone is unmuted and allowed in your browser, then try again.";
       }
       return msg;
@@ -153,6 +157,7 @@ async function ensureSdk() {
   });
   vapi.on("call-start", () => {
     active = true;
+    callEndedNormally = false;
     startedAt = Date.now();
     clearInterval(timerId);
     timerId = setInterval(tick, 1000);
@@ -163,7 +168,9 @@ async function ensureSdk() {
   });
   vapi.on("call-end", () => {
     active = false;
+    callEndedNormally = true;
     clearInterval(timerId);
+    els.error.hidden = true;
     setStatus("Call ended. Thanks for talking to Maya.", "idle");
     els.hangup.textContent = "Close";
     document.dispatchEvent(new CustomEvent("call:ended"));
@@ -175,6 +182,9 @@ async function ensureSdk() {
       addLine(m.role === "assistant" ? "assistant" : "user", m.transcript, m.transcriptType === "partial");
     }
     if (m?.type === "tool-calls" || m?.type === "function-call") setStatus("Checking that for you…", "listening");
+    if (m?.type === "status-update" && m.status === "ended" && !/error|failed/i.test(m.endedReason || "")) {
+      callEndedNormally = true;
+    }
   });
   vapi.on("error", (e) => {
     console.warn("vapi event error", e);
@@ -185,6 +195,18 @@ async function ensureSdk() {
       return;
     }
     const msg = extractErrorMessage(e);
+    // When Maya calls endCall at the end of a conversation, Daily fires "Meeting has ended" / "ejected".
+    // That is a normal hangup, not an error.
+    if (msg === "__NORMAL_END__" || callEndedNormally || (startedAt > 0 && Date.now() - startedAt > 20000)) {
+      active = false;
+      callEndedNormally = true;
+      clearInterval(timerId);
+      els.error.hidden = true;
+      setStatus("Call ended. Thanks for talking to Maya.", "idle");
+      els.hangup.textContent = "Close";
+      document.dispatchEvent(new CustomEvent("call:ended"));
+      return;
+    }
     showError(/payment|billing|card/i.test(msg) ? `${msg} (Add a payment method in the Vapi dashboard.)` : msg);
     setStatus("Call ended", "idle");
     active = false;

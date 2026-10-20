@@ -65,7 +65,14 @@ export class PatientRepository {
       this.db.prepare(`SELECT count(*) AS n FROM patients ${whereSql}`).get(params) as { n: number }
     ).n;
     const items = this.db
-      .prepare(`SELECT * FROM patients ${whereSql} ORDER BY created_at DESC LIMIT @limit OFFSET @offset`)
+      .prepare(
+        `SELECT patients.*,
+                (SELECT a.scheduled_for FROM appointments a WHERE a.patient_id = patients.patient_id AND a.status = 'scheduled' ORDER BY a.scheduled_for ASC LIMIT 1) AS next_appointment_at,
+                (SELECT a.provider_name FROM appointments a WHERE a.patient_id = patients.patient_id AND a.status = 'scheduled' ORDER BY a.scheduled_for ASC LIMIT 1) AS next_appointment_provider
+         FROM patients
+         ${whereSql}
+         ORDER BY created_at DESC LIMIT @limit OFFSET @offset`,
+      )
       .all({ ...params, limit: filter.limit, offset: filter.offset }) as PatientRecord[];
     return { items, total };
   }
