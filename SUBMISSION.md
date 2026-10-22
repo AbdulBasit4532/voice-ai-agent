@@ -14,7 +14,7 @@ Hello,
 Please find my submission for the Voice AI Agent — Patient Registration take-home assessment.
 
 • Repository:  https://github.com/AbdulBasit4532/voice-ai-agent
-• Phone number:  +1 (307) 487-1026
+• Phone number:  +1 (864) 383-7018
 • API base URL:  https://clerical-parted-enlisted.ngrok-free.dev
 
 No credentials are required. The REST API is unauthenticated (fictional data only).
@@ -42,7 +42,7 @@ Public. Clone and run locally with `npm install && cp .env.example .env && npm r
 
 ## 2. Phone number to call
 
-**+1 (307) 487-1026**
+**+1 (864) 383-7018**
 
 U.S. number provisioned with Vapi. The agent is **Maya**, intake coordinator for the fictional clinic **Lakeside Family Health**. Speak naturally. Do not use real patient data.
 
@@ -127,7 +127,7 @@ Bonus items shipped: duplicate detection by phone, mock appointment offer, Spani
 
 ## Suggested reviewer script (about five minutes)
 
-1. Dial **+1 (307) 487-1026** and complete a registration as a new patient.
+1. Dial **+1 (864) 383-7018** and complete a registration as a new patient.
 2. Open https://clerical-parted-enlisted.ngrok-free.dev/patients and confirm the record.
 3. Call again with the same phone number and confirm Maya offers to update.
 4. `POST /patients` with `"date_of_birth": "01/01/2099"` and confirm a 422, not a 500.
